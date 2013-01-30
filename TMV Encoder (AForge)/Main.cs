@@ -88,8 +88,12 @@ namespace TMV_Encoder__AForge_
                 }
                 logbox.Text += Environment.NewLine + "All frames converted, attempting to interleave audio.";
                 //AUDIO ACTIVATE
+                if (File.Exists(apath + "temp.wav")) //remove any previous streams
+                {
+                    File.Delete(apath + "temp.wav");
+                }
                 AviManager aviManager = new AviManager(oform.FileName, true);
-                try
+                try //try to read the stream
                 {
                     AudioStream waveStream = aviManager.GetWaveStream();
                     logbox.Text += Environment.NewLine + "Audio stream found:";
@@ -101,22 +105,31 @@ namespace TMV_Encoder__AForge_
                     waveStream.Close();
                     aviManager.Close();
 
-                }
-                catch
-                {
-                    logbox.Text += Environment.NewLine+"Error, source video does not have WAV audio.";
-                }
-                byte[] audio_data = readWav(apath + "temp.wav", tmvframe);
+                    byte[] audio_data = readWav(apath + "temp.wav", tmvframe);
 
-
-
-                if (reader.FrameRate > 99)
-                {
-                    tmvframe.save((decimal)(reader.FrameRate/10.0), audio_data);
+                    if (reader.FrameRate > 99) //sometimes frame rate is stored fixed point
+                    {
+                        tmvframe.save((decimal)(reader.FrameRate / 10.0), audio_data);
+                    }
+                    else
+                    {
+                        tmvframe.save(reader.FrameRate, audio_data);
+                    }
                 }
-                else
+                catch //error somewhere here, continue silent.
                 {
-                    tmvframe.save(reader.FrameRate, audio_data);
+                    logbox.Text += Environment.NewLine+"Error, source video does not have WAV audio, video will be silent.";
+                    
+                    if (reader.FrameRate > 99)
+                    {
+                        tmvframe.SampleRate = (ushort)(reader.FrameRate/10.0);
+                        tmvframe.save((decimal)(reader.FrameRate / 10.0), null);
+                    }
+                    else
+                    {
+                        tmvframe.SampleRate = (ushort)reader.FrameRate;
+                        tmvframe.save(reader.FrameRate, null);
+                    }
                 }
 
                 logbox.Text += Environment.NewLine + "Conversion finished @ " + DateTime.Now.ToString();
@@ -171,6 +184,11 @@ namespace TMV_Encoder__AForge_
                     Console.WriteLine(Subchunk1ID);
                     UInt32 Subchunk1Size = wavr.ReadUInt32();
                     UInt16 AudioFormat = wavr.ReadUInt16(); //MUST be 1 for PCM
+                    if (AudioFormat != 1)
+                    {
+                        logbox.Text += Environment.NewLine + "Error: Audio stream is not PCM encoded!";
+                        return null;
+                    }
                     UInt16 NumChannels = wavr.ReadUInt16();
                     UInt32 SampleRate = wavr.ReadUInt32();
                     UInt32 ByteRate = wavr.ReadUInt32();
@@ -193,7 +211,12 @@ namespace TMV_Encoder__AForge_
                     int p = 0;
                     for (int i = 0; i < Subchunk2Size; i += NumChannels) //WARNING. Assuming 1 byte.
                     {
-                        result[p] = (byte)((wavr.ReadByte() + wavr.ReadByte()) / 2); //Stereo to Mono
+                        int temp = 0;
+                        for (int c = 0; c < NumChannels; c++)
+                        {
+                            temp += wavr.ReadByte();
+                        }
+                        result[p] = (byte)(temp / NumChannels); //Stereo to Mono
                         p++;
                     }
                     current.SampleRate = (UInt16)(SampleRate); //sample rate is for each channel, not both. This is important for lots of reasons.

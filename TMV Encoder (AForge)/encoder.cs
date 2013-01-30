@@ -35,6 +35,7 @@ namespace TMV_Encoder__AForge_
             public byte character;
             public byte colour;
             public byte colourB;
+            public bool done;
         }
 
         public struct TMVFrame
@@ -43,7 +44,8 @@ namespace TMV_Encoder__AForge_
         }
 
 
-        public static Bitmap[] chars = new Bitmap[256];
+        public static Bitmap[] chars1 = new Bitmap[256];
+        public static Bitmap[] chars2 = new Bitmap[256];
         public Bitmap output = new Bitmap(320, 200);
 
         public static colc[] avgs = new colc[136];
@@ -55,6 +57,7 @@ namespace TMV_Encoder__AForge_
 
         public UInt16 SampleRate;
 
+        public cell[] result;
 
         private int _threshold = 60;
 
@@ -77,7 +80,8 @@ namespace TMV_Encoder__AForge_
             byte var = 0;
             for (int i = 0; i < 256; i++)
             {
-                chars[i] = new Bitmap(8, 8);
+                chars1[i] = new Bitmap(8, 8);
+                chars2[i] = new Bitmap(8, 8);
                 for (int row = 0; row < 8; row++)
                 {
                     temp = br.ReadByte(); //get row byte
@@ -88,11 +92,13 @@ namespace TMV_Encoder__AForge_
                         var = (byte)(var & temp); //bitmask 
                         if (var != 0)
                         {
-                            chars[i].SetPixel((7 - c), row, Color.White); //7-c reverses endian.
+                            chars1[i].SetPixel((7 - c), row, Color.White); //7-c reverses endian.
+                            chars2[i].SetPixel((7 - c), row, Color.White); //7-c reverses endian.
                         }
                         else
                         {
-                            chars[i].SetPixel((7 - c), row, Color.Black);
+                            chars1[i].SetPixel((7 - c), row, Color.Black);
+                            chars2[i].SetPixel((7 - c), row, Color.Black);
                         }
                     }
                 }
@@ -130,8 +136,11 @@ namespace TMV_Encoder__AForge_
 
         public Bitmap encode(Bitmap input) //MUST BE 320x200 OR STUFF WILL GO WRONG
         {
+            result = new cell[1000];
+
+
+            /*
             Bitmap bcell;
-            cell[] result = new cell[1000];
             int ccount = 0;
             for (int row = 0; row < 25; row++)
             {
@@ -149,10 +158,77 @@ namespace TMV_Encoder__AForge_
                     ccount++;
                     Application.DoEvents();
                 }
-            }
+            }*/
+
+            Bitmap input2 = (Bitmap)input.Clone();
+            Thread alpha = new Thread(forward_pass);
+            alpha.Start(input);
+
+            Thread beta = new Thread(backward_pass);
+            beta.Start(input2);
+
+            alpha.Join();
+            beta.Join();
+
             ovideo[curr_frame].cells = result;
             curr_frame++;
             return render(result);
+        }
+
+        private void forward_pass(object src)
+        {
+            Bitmap input = (Bitmap)src;
+            Bitmap bcell;
+            int ccount = 0;
+            for (int row = 0; row < 25; row++)
+            {
+                for (int col = 0; col < 40; col++)
+                {
+                    if (result[ccount].done)
+                    {
+                        return;
+                    }
+                    bcell = cropImage(input, new Rectangle((8 * col), (8 * row), 8, 8)); //Automatic Algorithim Selection
+                    if (getStdDev(bcell) < _threshold) //compare to threshold 60
+                    {
+                        result[ccount] = matchFast(bcell);
+                    }
+                    else
+                    {
+                        result[ccount] = matchSlow(bcell, chars1);
+                    }
+                    ccount++;
+                    Application.DoEvents();
+                }
+            }
+        }
+
+        private void backward_pass(object src)
+        {
+            Bitmap input = (Bitmap)src;
+            Bitmap bcell;
+            int ccount = 999;
+            for (int row = 24; row >= 0; row--)
+            {
+                for (int col = 39; col >= 0; col--)
+                {
+                    if (result[ccount].done)
+                    {
+                        return;
+                    }
+                    bcell = cropImage(input, new Rectangle((8 * col), (8 * row), 8, 8)); //Automatic Algorithim Selection
+                    if (getStdDev(bcell) < _threshold) //compare to threshold 60
+                    {
+                        result[ccount] = matchFast(bcell);
+                    }
+                    else
+                    {
+                        result[ccount] = matchSlow(bcell,chars2);
+                    }
+                    ccount--;
+                    Application.DoEvents();
+                }
+            }
         }
 
         public void save(decimal fps, byte[] sound_data)
@@ -188,7 +264,7 @@ namespace TMV_Encoder__AForge_
             fs.Dispose();
         }
 
-        private static Bitmap cropImage(Bitmap input, Rectangle cropArea)
+        private Bitmap cropImage(Bitmap input, Rectangle cropArea)
         {
             Bitmap cell = input.Clone(cropArea, input.PixelFormat);
             Graphics g = Graphics.FromImage(cell);
@@ -202,7 +278,6 @@ namespace TMV_Encoder__AForge_
             result.character = 177;
             result.colour = 0;
             result.colourB = 0;
-
             int diff = 0;
             int min = int.MaxValue;
             Color avg = getAvgColour(input);
@@ -217,11 +292,11 @@ namespace TMV_Encoder__AForge_
                     result.colourB = avgs[i].col2;
                 }
             }
-
+            result.done = true;
             return result;
         }
 
-        private cell matchSlow(Bitmap input) //brute force match
+        private cell matchSlow(Bitmap input, Bitmap[] chars) //brute force match
         {
             cell result;
             result.character = 0;
@@ -274,6 +349,7 @@ namespace TMV_Encoder__AForge_
                 }
 
             }
+            result.done = true;
             return result;
         }
 
@@ -349,7 +425,7 @@ namespace TMV_Encoder__AForge_
             {
                 for (int col = 0; col < 8; col++)
                 {
-                    if (chars[input.character].GetPixel(col, row).R > 0) //getFpixel(input.character, row, col))
+                    if (chars1[input.character].GetPixel(col, row).R > 0) //getFpixel(input.character, row, col))
                     {
                         result.SetPixel(col, row, colours[input.colour]);
                     }
