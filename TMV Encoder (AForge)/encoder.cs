@@ -167,6 +167,12 @@ namespace TMV_Encoder__AForge_
             Thread beta = new Thread(backward_pass);
             beta.Start(input2);
 
+            while (alpha.IsAlive || beta.IsAlive)
+            {
+                System.Threading.Thread.Sleep(50);
+                Application.DoEvents();
+            }
+
             alpha.Join();
             beta.Join();
 
