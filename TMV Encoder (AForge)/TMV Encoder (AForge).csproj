@@ -134,7 +134,9 @@
     <Compile Include="Avi.cs" />
     <Compile Include="AviManager.cs" />
     <Compile Include="AviStream.cs" />
+    <Compile Include="Cell.cs" />
     <Compile Include="encoder.cs" />
+    <Compile Include="FastBitmap.cs" />
     <Compile Include="Main.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -143,6 +145,7 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TMVEncoder.cs" />
     <Compile Include="VideoStream.cs" />
     <EmbeddedResource Include="about.resx">
       <DependentUpon>about.cs</DependentUpon>
@@ -159,6 +162,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <None Include="ClassDiagram1.cd" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
