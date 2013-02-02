@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
@@ -116,7 +117,7 @@ namespace TMV_Encoder__AForge_
             fs.Dispose();
         }
 
-
+        /*
         public Bitmap render(cell[] input) //input length must be 1000 or else. Renders into a bitmap based on the cell
         {
             Bitmap result = new Bitmap(320, 200);
@@ -131,6 +132,42 @@ namespace TMV_Encoder__AForge_
                     ccount++;
                 }
             }
+            return result;
+        } */
+
+        public unsafe Bitmap render(cell[] input) //renders the last frame
+        {
+            TMVFont renderfont = new TMVFont(apath + "font.bin");
+            Bitmap result = new Bitmap(320, 200, PixelFormat.Format24bppRgb);
+            BitmapData rData = result.LockBits(new Rectangle(0, 0, 320, 200), ImageLockMode.WriteOnly, result.PixelFormat);
+            byte* pResult = (byte*)rData.Scan0.ToPointer();
+            for (int c = 0; c < 1000; c++)
+            {
+                pResult = (byte*)rData.Scan0.ToPointer();
+                pResult += ((c / 40) * (40 * 3 * 64)) + ((c % 40) * 8 * 3);
+                for (int y = 0; y < 8; y++)
+                {
+                    for (int x = 0; x < 8; x++)
+                    {
+                        if (renderfont.getPixel(input[c].character, x, y))
+                        {
+                            *pResult++ = colours[input[c].colour].B; //B
+                            *pResult++ = colours[input[c].colour].G; //G
+                            *pResult++ = colours[input[c].colour].R; //R
+                        }
+                        else
+                        {
+
+                            *pResult++ = colours[input[c].colourB].B; //B
+                            *pResult++ = colours[input[c].colourB].G; //G
+                            *pResult++ = colours[input[c].colourB].R; //R
+                        }
+                    }
+                    pResult += (3 * 312); //jump to next row for char (3 bytes per pixel for 320 pixels, back 8)
+                }
+
+            }
+            result.UnlockBits(rData);
             return result;
         }
 

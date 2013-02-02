@@ -8,11 +8,11 @@ namespace TMV_Encoder__AForge_
 {
     public sealed class Cell
     {
-        /* Cell class, used for unprocessed cells only - pretty boring - maybe a struct would be better */
+        /* Cell class, used for unprocessed cells */
         public uint cellNum { get; set; }
-        public Bitmap src { get; set; }
+        public Color[] src { get; set; }
 
-        public Cell(Bitmap source, uint number)
+        public Cell(Color[] source, uint number)
         {
             cellNum = number;
             src = source;
