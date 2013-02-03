@@ -8,16 +8,13 @@ namespace TMV_Encoder__AForge_
 {
     public sealed class TMVFont
     {
-        private Boolean[][][] font = new Boolean[256][][];
+        private Boolean[][] font = new Boolean[256][];
+
         public TMVFont(string file)
         {
             for (int i = 0; i < 256; i++) //initialise our jagged array.
             {
-                font[i] = new Boolean[8][];
-                for (int j = 0; j < 8; j++)
-                {
-                    font[i][j] = new Boolean[8];
-                }
+                font[i] = new Boolean[64];
             }
 
             FileStream fs = new FileStream(file, FileMode.Open); //read our font
@@ -36,11 +33,11 @@ namespace TMV_Encoder__AForge_
                         var = (byte)(var & c_row); //bitmask 
                         if (var > 0)
                         {
-                            font[cha][x][row] = true;
+                            font[cha][(row*8)+x] = true;
                         }
                         else
                         {
-                            font[cha][x][row] = false;
+                            font[cha][(row * 8) + x] = false;
                         }
                     }
                 }
@@ -48,9 +45,14 @@ namespace TMV_Encoder__AForge_
             fs.Dispose();
         }
 
+        public bool getPix(int cha, int n)
+        {
+            return font[cha][n];
+        }
+
         public bool getPixel(int cha, int x, int y)
         {
-            return font[cha][x][y];
+            return font[cha][(y*8)+x];
         }
 
     }

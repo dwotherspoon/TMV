@@ -523,7 +523,7 @@ namespace TMV_Encoder__AForge_
             return (devRed + devGreen + devBlue);
         }
 
-        public static Color getAvgColour(Bitmap input)
+        private static Color getAvgColour(Bitmap input)
         {
             int TRed = 0;
             int TBlue = 0;

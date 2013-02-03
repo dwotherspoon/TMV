@@ -66,7 +66,7 @@
   <Class Name="TMV_Encoder__AForge_.TMVEncoder" Collapsed="true">
     <Position X="7" Y="2.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAEAAAAAQAAGAAAAACAAEIAAABCAAAEAAAQIQAAA=</HashCode>
+      <HashCode>AAAAAEAAIAAQAACAAAAAAAAEIAgABCAAAEQAAAIQAAA=</HashCode>
       <FileName>TMVEncoder.cs</FileName>
     </TypeIdentifier>
   </Class>

@@ -67,8 +67,9 @@ namespace TMV_Encoder__AForge_
                 logbox.Text += ("Codec: " + reader.CodecName + Environment.NewLine);
                 logbox.Text += ("Frames: " + reader.FrameCount + Environment.NewLine);
 
-                encoder tmvframe = new encoder(logbox.Text, reader.FrameCount);
-                tmvframe.Threshold = hScrollBar1.Value;
+                //encoder tmvframe = new encoder(logbox.Text, reader.FrameCount);
+                TMVEncoder tmv = new TMVEncoder();
+                //tmvframe.Threshold = hScrollBar1.Value;
                 Bitmap videoFrame = new Bitmap(320,200);
                 logbox.Text += "Conversion started @ " + DateTime.Now.ToString();
                 string logtxt = logbox.Text;
@@ -78,7 +79,8 @@ namespace TMV_Encoder__AForge_
                     pbar.Value = (int)((i * 100) / (reader.FrameCount-1));
                     logbox.Text = logtxt + Environment.NewLine + "Current Frame: " + i + "/" + (reader.FrameCount-1);
                     videoFrame = resize_image(reader.ReadVideoFrame());
-                    obox.Image = tmvframe.encode(videoFrame);
+                    //obox.Image = tmvframe.encode(videoFrame);
+                    obox.Image = tmv.encode(videoFrame);
                     if (checkBox1.Checked) //Is the user requesting a AVI?
                     {
                         writer.WriteVideoFrame((Bitmap)obox.Image);
@@ -88,6 +90,7 @@ namespace TMV_Encoder__AForge_
                 }
                 logbox.Text += Environment.NewLine + "All frames converted, attempting to interleave audio.";
                 //AUDIO ACTIVATE
+                /*
                 if (File.Exists(apath + "temp.wav")) //remove any previous streams
                 {
                     File.Delete(apath + "temp.wav");
@@ -123,14 +126,14 @@ namespace TMV_Encoder__AForge_
                     if (reader.FrameRate > 99)
                     {
                         tmvframe.SampleRate = (ushort)(reader.FrameRate/10.0);
-                        tmvframe.save((decimal)(reader.FrameRate / 10.0), null);
+                        tmvframe.save((decimal)(reader.FrameRate / 10.0), new Byte[reader.FrameCount]);
                     }
                     else
                     {
                         tmvframe.SampleRate = (ushort)reader.FrameRate;
-                        tmvframe.save(reader.FrameRate, null);
+                        tmvframe.save(reader.FrameRate, new Byte[reader.FrameCount]);
                     }
-                }
+                } */
 
                 logbox.Text += Environment.NewLine + "Conversion finished @ " + DateTime.Now.ToString();
                 writer.Close();

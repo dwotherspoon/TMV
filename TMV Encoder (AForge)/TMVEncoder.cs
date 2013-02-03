@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Threading;
 using System.IO;
+using System.Windows.Forms;
 
 namespace TMV_Encoder__AForge_
 {
@@ -19,7 +20,6 @@ namespace TMV_Encoder__AForge_
             public byte character;
             public byte colour;
             public byte colourB;
-            public bool done;
         }
 
         private static Color[] colours = {   Color.FromArgb(000, 000, 000), Color.FromArgb(000, 000, 170), Color.FromArgb(000, 170, 000), Color.FromArgb(000, 170, 170), Color.FromArgb(170, 000, 000), 
@@ -30,7 +30,7 @@ namespace TMV_Encoder__AForge_
 
         private Queue<Cell> unprocessed;
 
-        private int threshold { get; set; }
+        public  int threshold { get; set; }
 
         private ulong current_frame; //The count of the current frame.
 
@@ -39,41 +39,62 @@ namespace TMV_Encoder__AForge_
 
         private struct averages
         {
-            private Color avg;
-            private byte colour1;
-            private byte colour2;
+            public Color avg;
+            public byte colour1;
+            public byte colour2;
         }
 
+        private fcell[] frame;
 
+        private averages[] avgs = new averages[136];
         /* Methods: */
 
         public TMVEncoder()
         {
             threshold = 60; //default threshold value
             current_frame = 0;
-            workers = new Thread[Environment.ProcessorCount]; //Initialise the workers.
+            workers = new Thread[Environment.ProcessorCount-1]; //Initialise the workers.
             fonts = new TMVFont[workers.Length];
             for (int i = 0; i < workers.Length; i++)
             {
                 fonts[i] = new TMVFont(apath + "font.bin"); //fonts for each worker.
             }
+            FileStream fs = new FileStream(apath + "Fcols.dat", FileMode.Open); //load fast colour averages
+            BinaryReader br = new BinaryReader(fs);
+            for (int i = 0; i < 136; i++)
+            {
+                avgs[i].colour1 = br.ReadByte();
+                avgs[i].colour2 = br.ReadByte();
+                avgs[i].avg = Color.FromArgb((int)br.ReadByte(), (int)br.ReadByte(), (int)br.ReadByte());
+            }
+
+            fs.Dispose();
         }
 
-        public void encoder(Bitmap input) //the main function, call this to encode a frame -> starts thread workers after breaking image down.
+        public Bitmap encode(Bitmap input) //the main function, call this to encode a frame -> starts thread workers after breaking image down.
         {
+            frame = new fcell[1000];
+            unprocessed = new Queue<Cell>();
             for (int row = 0; row < 25; row++) //for each row
             {
                 for (int col = 0; col < 40; col++) // for each cell
                 {
-                    unprocessed.Enqueue(new Cell(getCell(input, row, col),(uint)((row*25)+(col*40)))); //add the new cell to our task pool
+                    unprocessed.Enqueue(new Cell(getCell(input, row, col),(uint)((row*40)+(col)))); //add the new cell to our task pool
                 }
 
             }
             for (int i = 0; i < workers.Length; i++ ) //start the workers on our cell pool
             {
                 workers[i] = new Thread(worker);
-                workers[i].Start();
+                workers[i].Start(i);
             }
+            while (unprocessed.Count > 0)
+            {
+                System.Threading.Thread.Sleep(50);
+                Console.WriteLine(unprocessed.Count);
+                Application.DoEvents();
+            }
+            return render(frame);
         }
 
         public unsafe Bitmap render(fcell[] input) //renders the last frame, fast!
@@ -98,6 +119,7 @@ namespace TMV_Encoder__AForge_
                         }
                         else
                         {
+
                             *pResult++ = colours[input[c].colourB].B; //B
                             *pResult++ = colours[input[c].colourB].G; //G
                             *pResult++ = colours[input[c].colourB].R; //R
@@ -105,6 +127,7 @@ namespace TMV_Encoder__AForge_
                     }
                     pResult += (3 * 312); //jump to next row for char (3 bytes per pixel for 320 pixels, back 8)
                 }
+
             }
             result.UnlockBits(rData);
             return result;
@@ -115,38 +138,62 @@ namespace TMV_Encoder__AForge_
           BitmapData bdata = input.LockBits(new Rectangle(col * 8, row * 8, 8, 8), System.Drawing.Imaging.ImageLockMode.ReadOnly, input.PixelFormat);
           byte* pBdata = (byte*)bdata.Scan0.ToPointer();
           Color[] result = new Color[64];
+          byte blue = 0;
+          byte green = 0;
+          byte red = 0;
+          byte alpha = 0;
           for (int pixel = 0; pixel < 64; pixel++)
           {
-              if (bdata.PixelFormat == PixelFormat.Format32bppArgb)
-              {
-                  result[pixel] = Color.FromArgb(*pBdata++, *pBdata++, *pBdata++, *pBdata++); //load colour by pointers
-              }
-              else //24RGB
-              {
-                  result[pixel] = Color.FromArgb(*pBdata++, *pBdata++, *pBdata++);
-              }
+                  alpha = *pBdata++;
+                  blue = *pBdata++;
+                  green = *pBdata++;
+                  red = *pBdata++;
+                  result[pixel] = Color.FromArgb(red, green, blue, alpha); //load colour by pointers n.b. bgr
+            //pBdata += (3 * 312); //jump to next row for char (3 bytes per pixel for 320 pixels, back 8)
           }
           input.UnlockBits(bdata);
           return result;
         }
 
-        private void worker() //The worker function, runs until the queue is depleted.
+        private void worker(object i) //The worker function, runs until the queue is depleted.
         {
-            while (unprocessed.Count > 0) //when queue is not empty, dequeue and encode
+            Cell current;
+            lock (unprocessed) //grab initial cell
             {
-                Cell current = unprocessed.Dequeue(); //grab a new cell
-                if (StdDev(current.src) > threshold) //Auto algorithim selection, it's nice.
+                if (unprocessed.Count > 0)
                 {
-                    MatchSlow(); //Important cell, brute match.
+                    current = unprocessed.Dequeue();
                 }
                 else
                 {
-                    MatchFast(); //Meh cell, colour only.
+                    current = null;
+                }
+            }
+            while (current != null) //when queue is not empty, dequeue and encode
+            {
+                if (stdDev(current.src) > threshold) //Auto algorithim selection, it's nice.
+                {
+                   frame[current.cellNum] = matchSlow(current, (int)i); //Important cell, brute match.
+                }
+                else
+                {
+                    frame[current.cellNum] = matchFast(current); //Meh cell, colour only.
+                }
+                lock (unprocessed)
+                {
+                    if (unprocessed.Count > 0)
+                    {
+                        current = unprocessed.Dequeue();
+                    }
+                    else
+                    {
+                        current = null;
+                    }
                 }
             }
         }
 
-        private double StdDev(Color[] input) //standard deviation of a cell
+        private double stdDev(Color[] input) //standard deviation of a cell
         {
             long totalR = 0;
             long totalG = 0;
@@ -185,12 +232,84 @@ namespace TMV_Encoder__AForge_
             return (devRed + devGreen + devBlue);
         }
 
-        private void MatchFast() //Colour matching algorithim
+        private Color avgColour(Cell input) //average colour of a cell
         {
+            uint sumRed = 0;
+            uint sumGreen = 0;
+            uint sumBlue = 0;
+
+            for (int pix = 0; pix < 64; pix++)
+            {
+                sumRed += input.src[pix].R;
+                sumGreen += input.src[pix].G;
+                sumBlue += input.src[pix].B;
+            }
+            return Color.FromArgb((int)(sumRed / 64), (int)(sumGreen / 64), (int)(sumBlue / 64));
         }
 
-        private void MatchSlow() //Brute force matching algorithim.
+        private fcell matchFast(Cell input) //Colour matching algorithim
         {
+            fcell result;
+            result.character = 177;
+            result.colour = 0;
+            result.colourB = 0;
+            int diff = 0;
+            int min = int.MaxValue;
+            Color avg = avgColour(input);
+
+            for (int i = 0; i < 136; i++)
+            {
+                diff = Math.Abs(avgs[i].avg.R - avg.R) + Math.Abs(avgs[i].avg.G - avg.G) + Math.Abs(avgs[i].avg.B - avg.B);
+                if (diff < min)
+                {
+                    min = diff;
+                    result.colour = avgs[i].colour1;
+                    result.colourB = avgs[i].colour2;
+                }
+            }
+            return result;
+        } 
+
+        private fcell matchSlow(Cell input, int i) //Brute force matching algorithim.
+        {
+            fcell result;
+            result.character = 0;
+            result.colour = 13;
+            result.colourB = 13;
+            uint diff;
+            uint min = uint.MaxValue;
+            for (byte cha = 3; cha < 255; cha++)
+            {
+                for (byte col1 = 0; col1 < 16; col1++)
+                {
+                    for (byte col2 = 0; col2 < 16; col2++)
+                    {
+                        if (col1 != col2) //try and save some time 
+                        {
+                            diff = 0;
+                            for (int pixel = 0; pixel < 64; pixel++)
+                            {
+                                if (fonts[i].getPix(cha, pixel))
+                                {
+                                    diff += (uint)(Math.Abs(input.src[pixel].R - colours[col1].R) + Math.Abs(input.src[pixel].G - colours[col1].G) + Math.Abs(input.src[pixel].B - colours[col1].B));
+                                }
+                                else
+                                {
+                                    diff += (uint)(Math.Abs(input.src[pixel].R - colours[col2].R) + Math.Abs(input.src[pixel].G - colours[col2].G) + Math.Abs(input.src[pixel].B - colours[col2].B));
+                                }
+                            }
+                            if (diff < min)
+                            {
+                                min = diff;
+                                result.character = cha;
+                                result.colour = col1;
+                                result.colourB = col2;
+                            }
+                        }
+                    }
+                }
+            }
+            return result;
         }
     }
 }
