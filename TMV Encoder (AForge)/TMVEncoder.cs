@@ -93,7 +93,7 @@ namespace TMV_Encoder__AForge_
                 System.Threading.Thread.Sleep(50);
                 Console.WriteLine(unprocessed.Count);
                 Application.DoEvents();
-            }
+            } 
             return render(frame);
         }
 
@@ -142,14 +142,17 @@ namespace TMV_Encoder__AForge_
           byte green = 0;
           byte red = 0;
           byte alpha = 0;
-          for (int pixel = 0; pixel < 64; pixel++)
+          for (int y = 0; y < 8; y++)
           {
+              for (int x = 0; x < 8; x++)
+              {
                   alpha = *pBdata++;
                   blue = *pBdata++;
                   green = *pBdata++;
                   red = *pBdata++;
-                  result[pixel] = Color.FromArgb(red, green, blue, alpha); //load colour by pointers n.b. bgr
-            //pBdata += (3 * 312); //jump to next row for char (3 bytes per pixel for 320 pixels, back 8)
+                  result[(y*8)+x] = Color.FromArgb(red, green, blue, alpha); //load colour by pointers n.b. bgr
+              }
+              pBdata += bdata.Stride - (4*8);
           }
           input.UnlockBits(bdata);
           return result;
