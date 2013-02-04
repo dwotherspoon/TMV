@@ -63,17 +63,29 @@
       <FileName>Program.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="TMV_Encoder__AForge_.TMVEncoder" Collapsed="true">
+  <Class Name="TMV_Encoder__AForge_.TMVEncoder">
     <Position X="7" Y="2.5" Width="1.5" />
+    <NestedTypes>
+      <Struct Name="TMV_Encoder__AForge_.TMVEncoder.fcell" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>TMVEncoder.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+      <Struct Name="TMV_Encoder__AForge_.TMVEncoder.averages" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>TMVEncoder.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+    </NestedTypes>
     <TypeIdentifier>
-      <HashCode>AAAAAEAAIAAQAACAAAAAAAAEIAgABCAAAEQAAAIQAAA=</HashCode>
+      <HashCode>AAACAEAAIAAQAACAAAAAAAAEIAgABCAAAEQAAQIQBAA=</HashCode>
       <FileName>TMVEncoder.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="TMV_Encoder__AForge_.TMVFont" Collapsed="true">
+  <Class Name="TMV_Encoder__AForge_.TMVFont">
     <Position X="8.75" Y="2.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQA=</HashCode>
+      <HashCode>AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQA=</HashCode>
       <FileName>TMVFont.cs</FileName>
     </TypeIdentifier>
   </Class>

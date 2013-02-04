@@ -91,7 +91,6 @@ namespace TMV_Encoder__AForge_
             while (unprocessed.Count > 0)
             {
                 System.Threading.Thread.Sleep(50);
-                Console.WriteLine(unprocessed.Count);
                 Application.DoEvents();
             } 
             return render(frame);
@@ -271,9 +270,124 @@ namespace TMV_Encoder__AForge_
                 }
             }
             return result;
-        } 
+        }
 
-        private fcell matchSlow(Cell input, int i) //Brute force matching algorithim.
+        private fcell matchSlow(Cell input, int i)
+        {
+            fcell result;
+            result.character = 0;
+            result.colour = 0;
+            result.colourB = 13;
+            //find most popular colours
+
+            int diff1;
+            int diff2;
+            int min = int.MaxValue;
+            byte[] mcommon = getMCommon(input);
+
+            for (int cha = 3; cha < 255; cha++)
+            {
+                diff1 = 0;
+                diff2 = 0;
+                //only two things to try here.
+                for (int pixel = 0; pixel < 64; pixel++)
+                {
+                        if (fonts[i].getPix(cha, pixel))
+                        {
+                            diff1 += Math.Abs(input.src[pixel].R - colours[mcommon[0]].R) + Math.Abs(input.src[pixel].G - colours[mcommon[0]].G) + Math.Abs(input.src[pixel].B - colours[mcommon[0]].B); //0 and 1
+                            diff2 += Math.Abs(input.src[pixel].R - colours[mcommon[1]].R) + Math.Abs(input.src[pixel].G - colours[mcommon[1]].G) + Math.Abs(input.src[pixel].B - colours[mcommon[1]].B); //1 and 0
+
+                        }
+                        else
+                        {
+                            diff1 += Math.Abs(input.src[pixel].R - colours[mcommon[1]].R) + Math.Abs(input.src[pixel].G - colours[mcommon[1]].G) + Math.Abs(input.src[pixel].B - colours[mcommon[1]].B); //0 and 1
+                            diff2 += Math.Abs(input.src[pixel].R - colours[mcommon[0]].R) + Math.Abs(input.src[pixel].G - colours[mcommon[0]].G) + Math.Abs(input.src[pixel].B - colours[mcommon[0]].B); //1 and 0
+                        }
+                }
+
+                if (diff1 < min)
+                {
+                    min = diff1;
+                    result.character = (byte)cha;
+                    result.colour = (byte)mcommon[0];
+                    result.colourB = (byte)mcommon[1];
+                }
+
+                if (diff2 < min)
+                {
+                    min = diff2;
+                    result.character = (byte)cha;
+                    result.colour = (byte)mcommon[1];
+                    result.colourB = (byte)mcommon[0];
+                }
+
+            }
+            return result;
+        }
+
+        private byte[] getMCommon(Cell input)
+        {
+            byte[] results = new byte[16]; //stores occurences
+
+            int min;
+            int minval;
+            int diff;
+            for (int pixel = 0; pixel < 64; pixel++)
+            {
+                minval = int.MaxValue;
+                min = 0;
+                for (int colour = 0; colour < 16; colour++)
+                {
+                    diff = Math.Abs(colours[colour].R - input.src[pixel].R) + Math.Abs(colours[colour].G - input.src[pixel].G) + Math.Abs(colours[colour].B - input.src[pixel].B);
+                    if (diff < minval)
+                    {
+                        minval = diff;
+                        min = colour;
+                    }
+                }
+                results[min] += 1;
+            }
+
+            byte[] output = new byte[2];
+            int max = 0;
+
+            for (int c = 0; c < 16; c++)
+            {
+                if (results[c] > max)
+                {
+                    max = results[c];
+                    output[0] = (byte)c;
+                }
+            }
+
+            if (output[0] == 0) //tweak results if we get black, as grey will often follow obbliterating detail
+            {
+                results[8] = (byte)(results[8] * 0.3);
+                results[7] = (byte)(results[7] * 0.6);
+
+            }
+            else if (output[0] == 8)
+            {
+                results[0] = (byte)(results[8] * 0.6);
+                results[7] = (byte)(results[7] * 0.6);
+            }
+            results[output[0]] = 0;
+            max = 0;
+
+            for (int c = 0; c < 16; c++)
+            {
+                if (results[c] > max)
+                {
+                    max = results[c];
+                    output[1] = (byte)c;
+                }
+            }
+
+            max = 0;
+            return output;
+        }
+
+        private fcell matchVSlow(Cell input, int i) //Brute force matching algorithim.
         {
             fcell result;
             result.character = 0;
