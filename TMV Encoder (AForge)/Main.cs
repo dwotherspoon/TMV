@@ -66,7 +66,7 @@ namespace TMV_Encoder__AForge_
                 logbox.Text += ("Fps: " + reader.FrameRate + "fps"+ Environment.NewLine);
                 logbox.Text += ("Codec: " + reader.CodecName + Environment.NewLine);
                 logbox.Text += ("Frames: " + reader.FrameCount + Environment.NewLine);
-
+                TMVFrame tframe = new TMVFrame();
                 //encoder tmvframe = new encoder(logbox.Text, reader.FrameCount);
                 TMVEncoder tmv = new TMVEncoder();
                 //tmvframe.Threshold = hScrollBar1.Value;
@@ -80,7 +80,8 @@ namespace TMV_Encoder__AForge_
                     logbox.Text = logtxt + Environment.NewLine + "Current Frame: " + i + "/" + (reader.FrameCount-1);
                     videoFrame = resize_image(reader.ReadVideoFrame());
                     //obox.Image = tmvframe.encode(videoFrame);
-                    obox.Image = tmv.encode(videoFrame);
+                    tframe = tmv.encode(videoFrame);
+                    obox.Image = tframe.renderFrame();
                     if (checkBox1.Checked) //Is the user requesting a AVI?
                     {
                         writer.WriteVideoFrame((Bitmap)obox.Image);

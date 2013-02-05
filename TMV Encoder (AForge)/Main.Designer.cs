@@ -34,12 +34,12 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.logbox = new System.Windows.Forms.RichTextBox();
             this.pbar = new System.Windows.Forms.ProgressBar();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label3 = new System.Windows.Forms.Label();
@@ -69,7 +69,7 @@
             // 
             // btn_encode
             // 
-            this.btn_encode.Location = new System.Drawing.Point(12, 281);
+            this.btn_encode.Location = new System.Drawing.Point(12, 321);
             this.btn_encode.Name = "btn_encode";
             this.btn_encode.Size = new System.Drawing.Size(673, 24);
             this.btn_encode.TabIndex = 2;
@@ -103,9 +103,24 @@
             this.openToolStripMenuItem.Text = "Open";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
+            // helpToolStripMenuItem
+            // 
+            this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.aboutToolStripMenuItem});
+            this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
+            this.helpToolStripMenuItem.Text = "Help";
+            // 
+            // aboutToolStripMenuItem
+            // 
+            this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
+            this.aboutToolStripMenuItem.Text = "About";
+            this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
+            // 
             // logbox
             // 
-            this.logbox.Location = new System.Drawing.Point(12, 311);
+            this.logbox.Location = new System.Drawing.Point(12, 351);
             this.logbox.Name = "logbox";
             this.logbox.ReadOnly = true;
             this.logbox.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
@@ -115,7 +130,7 @@
             // 
             // pbar
             // 
-            this.pbar.Location = new System.Drawing.Point(12, 456);
+            this.pbar.Location = new System.Drawing.Point(12, 496);
             this.pbar.Name = "pbar";
             this.pbar.Size = new System.Drawing.Size(669, 23);
             this.pbar.TabIndex = 5;
@@ -137,21 +152,6 @@
             this.label2.Size = new System.Drawing.Size(85, 13);
             this.label2.TabIndex = 7;
             this.label2.Text = "Encoded Frame:";
-            // 
-            // helpToolStripMenuItem
-            // 
-            this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.aboutToolStripMenuItem});
-            this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
-            this.helpToolStripMenuItem.Text = "Help";
-            // 
-            // aboutToolStripMenuItem
-            // 
-            this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.aboutToolStripMenuItem.Text = "About";
-            this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
             // hScrollBar1
             // 
@@ -196,7 +196,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(697, 491);
+            this.ClientSize = new System.Drawing.Size(697, 523);
             this.Controls.Add(this.scrlVal);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.checkBox1);

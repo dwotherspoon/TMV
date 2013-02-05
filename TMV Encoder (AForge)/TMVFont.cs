@@ -42,6 +42,7 @@ namespace TMV_Encoder__AForge_
                     }
                 }
             }
+            br.Close();
             fs.Dispose();
         }
 

@@ -30,12 +30,14 @@ namespace TMV_Encoder__AForge_
 
         private Queue<Cell> unprocessed;
 
-        public  int threshold { get; set; }
+        public int threshold { get; set; }
 
-        private ulong current_frame; //The count of the current frame.
+        public decimal brightness { get; set; }
 
         private static string apath = AppDomain.CurrentDomain.BaseDirectory; //exe directory for reading supporting binary files.
         private TMVFont[] fonts;
+
+        private TMVFrame cframe;
 
         private struct averages
         {
@@ -52,7 +54,7 @@ namespace TMV_Encoder__AForge_
         public TMVEncoder()
         {
             threshold = 60; //default threshold value
-            current_frame = 0;
+            brightness = (decimal)1.1; //default multiplier.
             workers = new Thread[Environment.ProcessorCount-1]; //Initialise the workers.
             fonts = new TMVFont[workers.Length];
             for (int i = 0; i < workers.Length; i++)
@@ -67,13 +69,12 @@ namespace TMV_Encoder__AForge_
                 avgs[i].colour2 = br.ReadByte();
                 avgs[i].avg = Color.FromArgb((int)br.ReadByte(), (int)br.ReadByte(), (int)br.ReadByte());
             }
-
             fs.Dispose();
+            cframe = new TMVFrame();
         }
 
-        public Bitmap encode(Bitmap input) //the main function, call this to encode a frame -> starts thread workers after breaking image down.
+        public TMVFrame encode(Bitmap input) //the main function, call this to encode a frame -> starts thread workers after breaking image down.
         {
-            frame = new fcell[1000];
             unprocessed = new Queue<Cell>();
             for (int row = 0; row < 25; row++) //for each row
             {
@@ -92,44 +93,8 @@ namespace TMV_Encoder__AForge_
             {
                 System.Threading.Thread.Sleep(50);
                 Application.DoEvents();
-            } 
-            return render(frame);
-        }
-
-        public unsafe Bitmap render(fcell[] input) //renders the last frame, fast!
-        {
-            TMVFont renderfont = new TMVFont(apath + "font.bin");
-            Bitmap result = new Bitmap(320, 200, PixelFormat.Format24bppRgb);
-            BitmapData rData = result.LockBits(new Rectangle(0, 0, 320, 200), ImageLockMode.WriteOnly, result.PixelFormat);
-            byte* pResult = (byte*)rData.Scan0.ToPointer();
-            for (int c = 0; c < 1000; c++)
-            {
-                pResult = (byte*)rData.Scan0.ToPointer();
-                pResult += ((c / 40) * (40 * 3 * 64)) + ((c % 40) * 8 * 3);
-                for (int y = 0; y < 8; y++)
-                {
-                    for (int x = 0; x < 8; x++)
-                    {
-                        if (renderfont.getPixel(input[c].character, x, y))
-                        {
-                            *pResult++ = colours[input[c].colour].B; //B
-                            *pResult++ = colours[input[c].colour].G; //G
-                            *pResult++ = colours[input[c].colour].R; //R
-                        }
-                        else
-                        {
-
-                            *pResult++ = colours[input[c].colourB].B; //B
-                            *pResult++ = colours[input[c].colourB].G; //G
-                            *pResult++ = colours[input[c].colourB].R; //R
-                        }
-                    }
-                    pResult += (3 * 312); //jump to next row for char (3 bytes per pixel for 320 pixels, back 8)
-                }
-
             }
-            result.UnlockBits(rData);
-            return result;
+            return cframe;
         }
 
         private unsafe Color[] getCell(Bitmap input, int row, int col) //gets our single cell, stored as a byte array this is faster than a bitmap.
@@ -145,11 +110,27 @@ namespace TMV_Encoder__AForge_
           {
               for (int x = 0; x < 8; x++)
               {
-                  alpha = *pBdata++;
                   blue = *pBdata++;
+                  if ((blue * brightness) > 255)
+                  { blue = 255; }
+                  else
+                  { blue = (byte)(blue * brightness); } 
+
                   green = *pBdata++;
+                  if ((green * brightness) > 255)
+                  { green = 255; }
+                  else
+                  { green = (byte)(green * brightness); }
+
                   red = *pBdata++;
-                  result[(y*8)+x] = Color.FromArgb(red, green, blue, alpha); //load colour by pointers n.b. bgr
+                  if ((red * brightness) > 255)
+                  { red = 255; }
+                  else
+                  { red = (byte)(red * brightness); } 
+
+                  alpha = *pBdata++;
+
+                  result[(y * 8) + x] = Color.FromArgb(alpha, red,green,blue); //load colour by pointers n.b. bgr
               }
               pBdata += bdata.Stride - (4*8);
           }
@@ -173,13 +154,13 @@ namespace TMV_Encoder__AForge_
             }
             while (current != null) //when queue is not empty, dequeue and encode
             {
-                if (stdDev(current.src) > threshold) //Auto algorithim selection, it's nice.
+                if (stdDev(current) > threshold) //Auto algorithim selection, it's nice.
                 {
-                   frame[current.cellNum] = matchSlow(current, (int)i); //Important cell, brute match.
+                    cframe.setCell(matchSlow(current, (int)i), (int)current.cellNum); //Important cell, brute match.
                 }
                 else
                 {
-                    frame[current.cellNum] = matchFast(current); //Meh cell, colour only.
+                    cframe.setCell(matchFast(current), (int)current.cellNum); //Meh cell, colour only.
                 }
                 lock (unprocessed)
                 {
@@ -195,7 +176,7 @@ namespace TMV_Encoder__AForge_
             }
         }
 
-        private double stdDev(Color[] input) //standard deviation of a cell
+        private double stdDev(Cell input) //standard deviation of a cell
         {
             long totalR = 0;
             long totalG = 0;
@@ -204,31 +185,31 @@ namespace TMV_Encoder__AForge_
             long sigmaG2 = 0;
             long sigmaB2 = 0;
 
-            for (int i = 0; i < input.Length; i++) //pixel scan
+            for (int i = 0; i < 64; i++) //pixel scan
             {
-                totalR += input[i].R;
-                totalG += input[i].G;
-                totalB += input[i].B;
+                totalR += input.getPix(i).R;
+                totalG += input.getPix(i).G;
+                totalB += input.getPix(i).B;
 
-                sigmaR2 += (long)Math.Pow((input[i].R), 2);
-                sigmaG2 += (long)Math.Pow((input[i].G), 2);
-                sigmaB2 += (long)Math.Pow((input[i].B), 2);
+                sigmaR2 += (input.getPix(i).R * input.getPix(i).R);
+                sigmaG2 += (input.getPix(i).G * input.getPix(i).G);
+                sigmaB2 += (input.getPix(i).B * input.getPix(i).B);
             }
 
-            double mRed = totalR / input.Length;
+            double mRed = totalR / 64;
             mRed = Math.Pow(mRed, 2);
-            double mGreen = totalG / input.Length;
+            double mGreen = totalG / 64;
             mGreen = Math.Pow(mGreen, 2);
-            double mBlue = totalB / input.Length;
+            double mBlue = totalB / 64;
             mBlue = Math.Pow(mBlue, 2);
 
-            double devRed = (sigmaR2 - (input.Length * mRed)) / (input.Length - 1);
+            double devRed = (sigmaR2 - (64 * mRed)) / 63;
             devRed = Math.Sqrt(devRed);
 
-            double devGreen = (sigmaG2 - (input.Length * mGreen)) / (input.Length - 1);
+            double devGreen = (sigmaG2 - (64 * mGreen)) / 63;
             devGreen = Math.Sqrt(devGreen);
 
-            double devBlue = (sigmaB2 - (input.Length * mBlue)) / (input.Length - 1);
+            double devBlue = (sigmaB2 - (64 * mBlue)) / 63;
             devBlue = Math.Sqrt(devBlue);
 
             return (devRed + devGreen + devBlue);
@@ -242,19 +223,19 @@ namespace TMV_Encoder__AForge_
 
             for (int pix = 0; pix < 64; pix++)
             {
-                sumRed += input.src[pix].R;
-                sumGreen += input.src[pix].G;
-                sumBlue += input.src[pix].B;
+                sumRed += input.getPix(pix).R;
+                sumGreen += input.getPix(pix).G;
+                sumBlue += input.getPix(pix).B;
             }
             return Color.FromArgb((int)(sumRed / 64), (int)(sumGreen / 64), (int)(sumBlue / 64));
         }
 
-        private fcell matchFast(Cell input) //Colour matching algorithim
+        private FCell matchFast(Cell input) //Colour matching algorithim
         {
-            fcell result;
+            FCell result = new FCell();
             result.character = 177;
-            result.colour = 0;
-            result.colourB = 0;
+            result.colour1 = 0;
+            result.colour2 = 0;
             int diff = 0;
             int min = int.MaxValue;
             Color avg = avgColour(input);
@@ -265,26 +246,26 @@ namespace TMV_Encoder__AForge_
                 if (diff < min)
                 {
                     min = diff;
-                    result.colour = avgs[i].colour1;
-                    result.colourB = avgs[i].colour2;
+                    result.colour1 = avgs[i].colour1;
+                    result.colour2 = avgs[i].colour2;
                 }
             }
             return result;
         }
 
-        private fcell matchSlow(Cell input, int i)
+        private FCell matchSlow(Cell input, int i)
         {
-            fcell result;
+            FCell result = new FCell();
             result.character = 0;
-            result.colour = 0;
-            result.colourB = 13;
+            result.colour1 = 0;
+            result.colour2 = 13;
             //find most popular colours
 
             int diff1;
             int diff2;
             int min = int.MaxValue;
             byte[] mcommon = getMCommon(input);
-
+            Console.WriteLine(mcommon[0] + ", " + mcommon[1]);
             for (int cha = 3; cha < 255; cha++)
             {
                 diff1 = 0;
@@ -294,31 +275,30 @@ namespace TMV_Encoder__AForge_
                 {
                         if (fonts[i].getPix(cha, pixel))
                         {
-                            diff1 += Math.Abs(input.src[pixel].R - colours[mcommon[0]].R) + Math.Abs(input.src[pixel].G - colours[mcommon[0]].G) + Math.Abs(input.src[pixel].B - colours[mcommon[0]].B); //0 and 1
-                            diff2 += Math.Abs(input.src[pixel].R - colours[mcommon[1]].R) + Math.Abs(input.src[pixel].G - colours[mcommon[1]].G) + Math.Abs(input.src[pixel].B - colours[mcommon[1]].B); //1 and 0
+                            diff1 += Math.Abs(input.getPix(i).R - colours[mcommon[0]].R) + Math.Abs(input.getPix(i).G - colours[mcommon[0]].G) + Math.Abs(input.getPix(i).B - colours[mcommon[0]].B); //0 and 1
+                            diff2 += Math.Abs(input.getPix(i).R - colours[mcommon[1]].R) + Math.Abs(input.getPix(i).G - colours[mcommon[1]].G) + Math.Abs(input.getPix(i).B - colours[mcommon[1]].B); //1 and 0
 
                         }
                         else
                         {
-                            diff1 += Math.Abs(input.src[pixel].R - colours[mcommon[1]].R) + Math.Abs(input.src[pixel].G - colours[mcommon[1]].G) + Math.Abs(input.src[pixel].B - colours[mcommon[1]].B); //0 and 1
-                            diff2 += Math.Abs(input.src[pixel].R - colours[mcommon[0]].R) + Math.Abs(input.src[pixel].G - colours[mcommon[0]].G) + Math.Abs(input.src[pixel].B - colours[mcommon[0]].B); //1 and 0
+                            diff1 += Math.Abs(input.getPix(i).R - colours[mcommon[1]].R) + Math.Abs(input.getPix(i).G - colours[mcommon[1]].G) + Math.Abs(input.getPix(i).B - colours[mcommon[1]].B); //0 and 1
+                            diff2 += Math.Abs(input.getPix(i).R - colours[mcommon[0]].R) + Math.Abs(input.getPix(i).G - colours[mcommon[0]].G) + Math.Abs(input.getPix(i).B - colours[mcommon[0]].B); //1 and 0
                         }
                 }
-
                 if (diff1 < min)
                 {
                     min = diff1;
                     result.character = (byte)cha;
-                    result.colour = (byte)mcommon[0];
-                    result.colourB = (byte)mcommon[1];
+                    result.colour1 = (byte)mcommon[0];
+                    result.colour2 = (byte)mcommon[1];
                 }
 
                 if (diff2 < min)
                 {
                     min = diff2;
                     result.character = (byte)cha;
-                    result.colour = (byte)mcommon[1];
-                    result.colourB = (byte)mcommon[0];
+                    result.colour1 = (byte)mcommon[1];
+                    result.colour2 = (byte)mcommon[0];
                 }
 
             }
@@ -338,7 +318,7 @@ namespace TMV_Encoder__AForge_
                 min = 0;
                 for (int colour = 0; colour < 16; colour++)
                 {
-                    diff = Math.Abs(colours[colour].R - input.src[pixel].R) + Math.Abs(colours[colour].G - input.src[pixel].G) + Math.Abs(colours[colour].B - input.src[pixel].B);
+                    diff = Math.Abs(colours[colour].R - input.getPix(pixel).R) + Math.Abs(colours[colour].G - input.getPix(pixel).G) + Math.Abs(colours[colour].B - input.getPix(pixel).B);
                     if (diff < minval)
                     {
                         minval = diff;
@@ -387,7 +367,7 @@ namespace TMV_Encoder__AForge_
             return output;
         }
 
-        private fcell matchVSlow(Cell input, int i) //Brute force matching algorithim.
+        private fcell matchVSlow(Cell input, int i) //Brute force matching algorithim, not used
         {
             fcell result;
             result.character = 0;
@@ -408,11 +388,11 @@ namespace TMV_Encoder__AForge_
                             {
                                 if (fonts[i].getPix(cha, pixel))
                                 {
-                                    diff += (uint)(Math.Abs(input.src[pixel].R - colours[col1].R) + Math.Abs(input.src[pixel].G - colours[col1].G) + Math.Abs(input.src[pixel].B - colours[col1].B));
+                                    diff += (uint)(Math.Abs(input.getPix(pixel).R - colours[col1].R) + Math.Abs(input.getPix(pixel).G - colours[col1].G) + Math.Abs(input.getPix(pixel).B - colours[col1].B));
                                 }
                                 else
                                 {
-                                    diff += (uint)(Math.Abs(input.src[pixel].R - colours[col2].R) + Math.Abs(input.src[pixel].G - colours[col2].G) + Math.Abs(input.src[pixel].B - colours[col2].B));
+                                    diff += (uint)(Math.Abs(input.getPix(pixel).R - colours[col2].R) + Math.Abs(input.getPix(pixel).G - colours[col2].G) + Math.Abs(input.getPix(pixel).B - colours[col2].B));
                                 }
                             }
                             if (diff < min)
