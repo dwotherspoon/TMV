@@ -265,7 +265,6 @@ namespace TMV_Encoder__AForge_
             int diff2;
             int min = int.MaxValue;
             byte[] mcommon = getMCommon(input);
-            Console.WriteLine(mcommon[0] + ", " + mcommon[1]);
             for (int cha = 3; cha < 255; cha++)
             {
                 diff1 = 0;
@@ -275,14 +274,14 @@ namespace TMV_Encoder__AForge_
                 {
                         if (fonts[i].getPix(cha, pixel))
                         {
-                            diff1 += Math.Abs(input.getPix(i).R - colours[mcommon[0]].R) + Math.Abs(input.getPix(i).G - colours[mcommon[0]].G) + Math.Abs(input.getPix(i).B - colours[mcommon[0]].B); //0 and 1
-                            diff2 += Math.Abs(input.getPix(i).R - colours[mcommon[1]].R) + Math.Abs(input.getPix(i).G - colours[mcommon[1]].G) + Math.Abs(input.getPix(i).B - colours[mcommon[1]].B); //1 and 0
+                            diff1 += Math.Abs(input.getPix(pixel).R - colours[mcommon[0]].R) + Math.Abs(input.getPix(pixel).G - colours[mcommon[0]].G) + Math.Abs(input.getPix(pixel).B - colours[mcommon[0]].B); //0 and 1
+                            diff2 += Math.Abs(input.getPix(pixel).R - colours[mcommon[1]].R) + Math.Abs(input.getPix(pixel).G - colours[mcommon[1]].G) + Math.Abs(input.getPix(pixel).B - colours[mcommon[1]].B); //1 and 0
 
                         }
                         else
                         {
-                            diff1 += Math.Abs(input.getPix(i).R - colours[mcommon[1]].R) + Math.Abs(input.getPix(i).G - colours[mcommon[1]].G) + Math.Abs(input.getPix(i).B - colours[mcommon[1]].B); //0 and 1
-                            diff2 += Math.Abs(input.getPix(i).R - colours[mcommon[0]].R) + Math.Abs(input.getPix(i).G - colours[mcommon[0]].G) + Math.Abs(input.getPix(i).B - colours[mcommon[0]].B); //1 and 0
+                            diff1 += Math.Abs(input.getPix(pixel).R - colours[mcommon[1]].R) + Math.Abs(input.getPix(pixel).G - colours[mcommon[1]].G) + Math.Abs(input.getPix(pixel).B - colours[mcommon[1]].B); //0 and 1
+                            diff2 += Math.Abs(input.getPix(pixel).R - colours[mcommon[0]].R) + Math.Abs(input.getPix(pixel).G - colours[mcommon[0]].G) + Math.Abs(input.getPix(pixel).B - colours[mcommon[0]].B); //1 and 0
                         }
                 }
                 if (diff1 < min)
