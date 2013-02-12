@@ -11,6 +11,13 @@ namespace TMV_Encoder__AForge_
     {
         public byte character;
         public byte colour1;
-        public byte colour2;
+        public byte colour2;  
+        
+        public string ToString()
+        {
+            return "cha: " + character;
+        }
     }
+
+ 
 }

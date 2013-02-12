@@ -58,7 +58,7 @@ namespace TMV_Encoder__AForge_
                 reader.Open(oform.FileName);
                 if (checkBox1.Checked) //Is the user requesting a AVI?
                 {
-                    writer.Open(apath + "output.avi", 320, 200, reader.FrameRate);
+                    writer.Open(apath + "output.wmv", 320, 200, reader.FrameRate, VideoCodec.WMV2);
                 }
                 // check some of its attributes
                 logbox.Text += "Width: " + reader.Width + "px" + Environment.NewLine;
@@ -66,8 +66,9 @@ namespace TMV_Encoder__AForge_
                 logbox.Text += ("Fps: " + reader.FrameRate + "fps"+ Environment.NewLine);
                 logbox.Text += ("Codec: " + reader.CodecName + Environment.NewLine);
                 logbox.Text += ("Frames: " + reader.FrameCount + Environment.NewLine);
+                //start encoding
+                TMVVideo tvid = new TMVVideo();
                 TMVFrame tframe = new TMVFrame();
-                //encoder tmvframe = new encoder(logbox.Text, reader.FrameCount);
                 TMVEncoder tmv = new TMVEncoder();
                 //tmvframe.Threshold = hScrollBar1.Value;
                 Bitmap videoFrame = new Bitmap(320,200);
@@ -79,9 +80,10 @@ namespace TMV_Encoder__AForge_
                     pbar.Value = (int)((i * 100) / (reader.FrameCount-1));
                     logbox.Text = logtxt + Environment.NewLine + "Current Frame: " + i + "/" + (reader.FrameCount-1);
                     videoFrame = resize_image(reader.ReadVideoFrame());
-                    //obox.Image = tmvframe.encode(videoFrame);
                     tframe = tmv.encode(videoFrame);
+                    tvid.addFrame(tframe);
                     obox.Image = tframe.renderFrame();
+                    tframe = new TMVFrame();
                     if (checkBox1.Checked) //Is the user requesting a AVI?
                     {
                         writer.WriteVideoFrame((Bitmap)obox.Image);
@@ -90,8 +92,6 @@ namespace TMV_Encoder__AForge_
                     Application.DoEvents();
                 }
                 logbox.Text += Environment.NewLine + "All frames converted, attempting to interleave audio.";
-                //AUDIO ACTIVATE
-                /*
                 if (File.Exists(apath + "temp.wav")) //remove any previous streams
                 {
                     File.Delete(apath + "temp.wav");
@@ -109,32 +109,38 @@ namespace TMV_Encoder__AForge_
                     waveStream.Close();
                     aviManager.Close();
 
-                    byte[] audio_data = readWav(apath + "temp.wav", tmvframe);
+                    byte[] audio_data = readWav(apath + "temp.wav");
 
-                    if (reader.FrameRate > 99) //sometimes frame rate is stored fixed point
+                    if (reader.FrameRate > 99) //sometimes frame rate is stored fixed point CRUDE
                     {
-                        tmvframe.save((decimal)(reader.FrameRate / 10.0), audio_data);
+                        tvid.setFPS((decimal)(reader.FrameRate / 10.0));
+                        tvid.loadAudio(audio_data);
+                        tvid.save();
                     }
                     else
                     {
-                        tmvframe.save(reader.FrameRate, audio_data);
+                        tvid.setFPS(reader.FrameRate);
+                        tvid.loadAudio(audio_data);
+                        tvid.save();
                     }
                 }
                 catch //error somewhere here, continue silent.
                 {
                     logbox.Text += Environment.NewLine+"Error, source video does not have WAV audio, video will be silent.";
                     
-                    if (reader.FrameRate > 99)
+                    if (reader.FrameRate > 99) //sometimes frame rate is stored fixed point CRUDE
                     {
-                        tmvframe.SampleRate = (ushort)(reader.FrameRate/10.0);
-                        tmvframe.save((decimal)(reader.FrameRate / 10.0), new Byte[reader.FrameCount]);
+                        tvid.setFPS((decimal)(reader.FrameRate / 10.0));
+                        tvid.loadAudio(new Byte[reader.FrameCount]);
+                        tvid.save();
                     }
                     else
                     {
-                        tmvframe.SampleRate = (ushort)reader.FrameRate;
-                        tmvframe.save(reader.FrameRate, new Byte[reader.FrameCount]);
+                        tvid.setFPS(reader.FrameRate);
+                        tvid.loadAudio(new Byte[reader.FrameCount]);
+                        tvid.save();
                     }
-                } */
+                }
 
                 logbox.Text += Environment.NewLine + "Conversion finished @ " + DateTime.Now.ToString();
                 writer.Close();
@@ -160,7 +166,7 @@ namespace TMV_Encoder__AForge_
             return output;
         }
 
-        private byte[] readWav(string fpath, encoder current) //Generates data by parsing WAVE https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
+        private byte[] readWav(string fpath) //Generates data by parsing WAVE https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
         {
             FileStream fs = new FileStream(fpath, FileMode.Open, FileAccess.Read, FileShare.Read);
             BinaryReader wavr = new BinaryReader(fs);
@@ -194,10 +200,18 @@ namespace TMV_Encoder__AForge_
                         return null;
                     }
                     UInt16 NumChannels = wavr.ReadUInt16();
+                    if (NumChannels == 0)
+                    {
+                        throw new NoNullAllowedException();
+                    }
                     UInt32 SampleRate = wavr.ReadUInt32();
                     UInt32 ByteRate = wavr.ReadUInt32();
                     UInt16 BlockAlign = wavr.ReadUInt16();
                     UInt16 BitsPerSample = wavr.ReadUInt16();
+                    if (BitsPerSample == 0)
+                    {
+                        throw new NoNullAllowedException();
+                    }
                     for (int i = 16; i < Subchunk1Size; i++) //read excess bytes :D
                     {
                         wavr.ReadByte();
@@ -211,6 +225,10 @@ namespace TMV_Encoder__AForge_
                     Console.WriteLine(BitsPerSample);
                     Console.WriteLine(NumChannels);
                     UInt32 Subchunk2Size = wavr.ReadUInt32();
+                    if (Subchunk2Size == 0)
+                    {
+                        throw new NoNullAllowedException();
+                    }
                     byte[] result = new byte[Subchunk2Size / (NumChannels)];
                     int p = 0;
                     for (int i = 0; i < Subchunk2Size; i += NumChannels) //WARNING. Assuming 1 byte.
@@ -223,7 +241,6 @@ namespace TMV_Encoder__AForge_
                         result[p] = (byte)(temp / NumChannels); //Stereo to Mono
                         p++;
                     }
-                    current.SampleRate = (UInt16)(SampleRate); //sample rate is for each channel, not both. This is important for lots of reasons.
                     return result;
                 }
                 else

@@ -31,6 +31,18 @@ namespace TMV_Encoder__AForge_
             cells[index] = cell;
         }
 
+        public byte getCellChar(int n)
+        {
+            return cells[n].character;
+        }
+
+        public byte getCellCol(int n)
+        {
+            byte col = (byte)(cells[n].colour2 << 4);
+            Console.WriteLine(col + " " + cells[n].colour2);
+            return (byte)(col + cells[n].colour1);
+        }
+
         public unsafe Bitmap renderFrame()
         {
             Bitmap result = new Bitmap(320, 200, PixelFormat.Format24bppRgb);
@@ -62,6 +74,16 @@ namespace TMV_Encoder__AForge_
 
             }
             result.UnlockBits(rData);
+            return result;
+        }
+
+        public string ToString()
+        {
+            string result = "";
+            for (int cell = 0; cell < 1000; cell++)
+            {
+                result += cells[cell].ToString();
+            }
             return result;
         }
     }

@@ -54,7 +54,7 @@ namespace TMV_Encoder__AForge_
         public TMVEncoder()
         {
             threshold = 60; //default threshold value
-            brightness = (decimal)1.1; //default multiplier.
+            brightness = (decimal)1.05; //default multiplier.
             workers = new Thread[Environment.ProcessorCount-1]; //Initialise the workers.
             fonts = new TMVFont[workers.Length];
             for (int i = 0; i < workers.Length; i++)
@@ -197,11 +197,11 @@ namespace TMV_Encoder__AForge_
             }
 
             double mRed = totalR / 64;
-            mRed = Math.Pow(mRed, 2);
+            mRed *= mRed;
             double mGreen = totalG / 64;
-            mGreen = Math.Pow(mGreen, 2);
+            mGreen *= mGreen;
             double mBlue = totalB / 64;
-            mBlue = Math.Pow(mBlue, 2);
+            mBlue *= mBlue;
 
             double devRed = (sigmaR2 - (64 * mRed)) / 63;
             devRed = Math.Sqrt(devRed);
