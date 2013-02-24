@@ -29,9 +29,11 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>
+    </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AForge, Version=2.2.4.0, Culture=neutral, PublicKeyToken=c1db6ff4eaa06aeb, processorArchitecture=MSIL">
@@ -136,7 +138,6 @@
     <Compile Include="AviManager.cs" />
     <Compile Include="AviStream.cs" />
     <Compile Include="Cell.cs" />
-    <Compile Include="encoder.cs" />
     <Compile Include="FCell.cs" />
     <Compile Include="Main.cs">
       <SubType>Form</SubType>

@@ -63,7 +63,7 @@
             this.rchMain.ReadOnly = true;
             this.rchMain.Size = new System.Drawing.Size(304, 96);
             this.rchMain.TabIndex = 2;
-            this.rchMain.Text = "TMV Encoder v0.1\n\nCompiled 16/01/2013\n\nCreated by David Wotherspoon";
+            this.rchMain.Text = "TMV Encoder v0.2\n\nCompiled 23/02/2013\n\nCreated by David Wotherspoon";
             // 
             // label1
             // 

@@ -46,8 +46,6 @@ namespace TMV_Encoder__AForge_
             public byte colour2;
         }
 
-        private fcell[] frame;
-
         private averages[] avgs = new averages[136];
         /* Methods: */
 
@@ -70,11 +68,11 @@ namespace TMV_Encoder__AForge_
                 avgs[i].avg = Color.FromArgb((int)br.ReadByte(), (int)br.ReadByte(), (int)br.ReadByte());
             }
             fs.Dispose();
-            cframe = new TMVFrame();
         }
 
         public TMVFrame encode(Bitmap input) //the main function, call this to encode a frame -> starts thread workers after breaking image down.
         {
+            cframe = new TMVFrame();
             unprocessed = new Queue<Cell>();
             for (int row = 0; row < 25; row++) //for each row
             {
@@ -89,11 +87,16 @@ namespace TMV_Encoder__AForge_
                 workers[i] = new Thread(worker);
                 workers[i].Start(i);
             }
-            while (unprocessed.Count > 0)
-            {
+            while (unprocessed.Count > 0) {
                 System.Threading.Thread.Sleep(50);
                 Application.DoEvents();
             }
+
+            for (int t = 0; t < workers.Length; t++)
+            {
+                workers[t].Join();
+            }
+
             return cframe;
         }
 

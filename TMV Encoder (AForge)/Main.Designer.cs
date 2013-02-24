@@ -211,7 +211,7 @@
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Main";
-            this.Text = "TMV Encoder v0.1 (using AForge.NET)";
+            this.Text = "TMV Encoder v0.2";
             ((System.ComponentModel.ISupportInitialize)(this.obox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.fbox)).EndInit();
             this.menuStrip1.ResumeLayout(false);

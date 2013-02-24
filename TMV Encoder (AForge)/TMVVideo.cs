@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Drawing;
 
 namespace TMV_Encoder__AForge_
 {
     /* A video */
-    public class TMVVideo
+    public sealed class TMVVideo
     {
         private Queue<TMVFrame> frames; //Fifo 
 
@@ -17,28 +18,23 @@ namespace TMV_Encoder__AForge_
 
         private static string apath = AppDomain.CurrentDomain.BaseDirectory;
 
-        public TMVVideo()
-        {
+        public TMVVideo() {
             frames = new Queue<TMVFrame>();
         }
 
-        public void addFrame(TMVFrame frame)
-        {
+        public void addFrame(TMVFrame frame) {
             frames.Enqueue(frame);
         }
 
-        public void loadAudio(byte[] audio)
-        {
+        public void loadAudio(byte[] audio) {
             audio_data = audio;
         }
 
-        public void setFPS(decimal FPS)
-        {
+        public void setFPS(decimal FPS) {
             frameRate = FPS;
         }
 
-        public void save()
-        {
+        public void save() {
             UInt16 achunksize = (UInt16)(audio_data.LongLength / frames.Count);
             UInt16 samplerate = (UInt16)(frameRate * achunksize);
             Console.WriteLine("Sample Rate: " + samplerate);
@@ -57,17 +53,13 @@ namespace TMV_Encoder__AForge_
             bw.Write((byte)0); //type
             TMVFrame  cframe;
             int frame = 0;
-            while (frames.Count > 0)
-            {
+            while (frames.Count > 0) {
                 cframe = frames.Dequeue();
-                Console.Write(cframe.ToString());
-                for (int cell = 0; cell < 1000; cell++)
-                {
+                for (int cell = 0; cell < 1000; cell++) {
                     bw.Write((byte)cframe.getCellChar(cell));
                     bw.Write((byte)cframe.getCellCol(cell));
                 }
-                for (int sample = 0; sample < achunksize; sample++)
-                {
+                for (int sample = 0; sample < achunksize; sample++) {
                     bw.Write(audio_data[(frame * achunksize) + sample]);
                 }
                 frame++;
