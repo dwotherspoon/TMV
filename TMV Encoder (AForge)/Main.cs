@@ -22,10 +22,17 @@ namespace TMV_Encoder__AForge_
         public int result;
         public OpenFileDialog oform;
         public static string apath = AppDomain.CurrentDomain.BaseDirectory;
+        private bool closing = false;
 
         public Main() {
             InitializeComponent();
-            logbox.Text = "TMV Encoder v0.1a started";
+            this.FormClosing += new FormClosingEventHandler(Main_Closing);
+            logbox.Text = "TMV Encoder v0.2a started";
+        }
+        
+        void Main_Closing(object sender, FormClosingEventArgs e)
+        {
+            closing = true;
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -78,6 +85,10 @@ namespace TMV_Encoder__AForge_
                     logbox.Text = logtxt + Environment.NewLine + "Current Frame: " + i + "/" + (reader.FrameCount-1);
                     if (checkBox1.Checked) { //Is the user requesting a AVI?
                         writer.WriteVideoFrame((Bitmap)obox.Image);
+                    }
+                    if (closing)
+                    {
+                        return;
                     }
                     fbox.Image = videoFrame;
                     Application.DoEvents();
@@ -136,7 +147,6 @@ namespace TMV_Encoder__AForge_
             }
             else {
                 logbox.Text += Environment.NewLine + "Error: Select a file (Using File -> Open) before attempting to encode.";
-
             }
         }
 

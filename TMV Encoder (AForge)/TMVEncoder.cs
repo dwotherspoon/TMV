@@ -52,7 +52,7 @@ namespace TMV_Encoder__AForge_
         public TMVEncoder()
         {
             threshold = 60; //default threshold value
-            brightness = (decimal)1.05; //default multiplier.
+            brightness = (decimal)1.12; //default multiplier.
             workers = new Thread[Environment.ProcessorCount-1]; //Initialise the workers.
             fonts = new TMVFont[workers.Length];
             for (int i = 0; i < workers.Length; i++)

@@ -19,7 +19,7 @@ namespace TMV_Encoder__AForge_
             colour2 = 0;
         }
         
-        public string ToString()
+        public override string ToString()
         {
             return "cha: " + character;
         }

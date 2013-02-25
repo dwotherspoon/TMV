@@ -67,7 +67,7 @@ namespace TMV_Encoder__AForge_
             return result;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             string result = "";
             for (int cell = 0; cell < 1000; cell++)
