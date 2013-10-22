@@ -1,7 +1,13 @@
-TMV
+TMV (C# - Deprecated)
 ===
 
-TMV Encoder for Windows, written in C#/
+This version is no longer in development. Switch over to a Java and Xuggle baased solution is in progress at: 
+
+https://github.com/JumpingFrog/tmv_encoder
+
+
+
+TMV Encoder for Windows, written in C#.
 
 Requires the AForge.NET library, quite a few things are only half implemented (e.g. audio support).
 
